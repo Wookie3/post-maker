@@ -169,26 +169,28 @@ function ImageUpload({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={() => uploadImage(onChange)}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-sm text-[var(--muted)] hover:border-indigo-500/30 hover:text-[var(--foreground)] transition-colors"
-      >
-        <ImageIcon size={14} />
-        Upload
-      </button>
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => uploadImage(onChange)}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-sm text-[var(--muted)] hover:border-indigo-500/30 hover:text-[var(--foreground)] transition-colors"
+        >
+          <ImageIcon size={14} />
+          Upload
+        </button>
+        {value && (
+          <div className="w-8 h-8 rounded-md overflow-hidden border border-[var(--border)]">
+            <img src={value} alt="preview" className="w-full h-full object-cover" />
+          </div>
+        )}
+      </div>
       {value && (
         <button
           onClick={() => onChange("")}
-          className="px-2 py-2 rounded-lg text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+          className="px-2 py-1 rounded-lg text-xs text-red-400 hover:bg-red-500/10 transition-colors w-fit"
         >
           Remove
         </button>
-      )}
-      {value && (
-        <div className="w-8 h-8 rounded-md overflow-hidden border border-[var(--border)]">
-          <img src={value} alt="preview" className="w-full h-full object-cover" />
-        </div>
       )}
     </div>
   );
@@ -514,93 +516,145 @@ export default function EditorPage() {
   const platformColors = { twitter: "text-sky-400", instagram: "text-pink-400", facebook: "text-blue-400" };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-screen overflow-auto sm:overflow-hidden">
       {/* ─── Top Bar ────────────────────────────────────────── */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)] bg-[var(--surface)] flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/")}
-            className="p-1.5 rounded-lg hover:bg-[var(--surface-2)] transition-colors"
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1 className="text-sm font-semibold">{platformNames[platform]}</h1>
-            <p className="text-[11px] text-[var(--muted)]">Post Editor</p>
+      <header className="border-b border-[var(--border)] bg-[var(--surface)] flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push("/")}
+              className="p-1.5 rounded-lg hover:bg-[var(--surface-2)] transition-colors"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div>
+              <h1 className="text-sm font-semibold">{platformNames[platform]}</h1>
+              <p className="text-[11px] text-[var(--muted)]">Post Editor</p>
+            </div>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-1.5">
+            <button
+              onClick={handleAutofill}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-purple-500/30 hover:text-purple-400 transition-colors"
+              title="Auto-fill with meme data"
+            >
+              <Wand2 size={13} />
+              Auto-fill
+            </button>
+
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-amber-500/30 hover:text-amber-400 transition-colors"
+              title={`Switch to ${isDark ? "light" : "dark"} mode`}
+            >
+              {isDark ? <Sun size={13} /> : <Moon size={13} />}
+              {isDark ? "Light" : "Dark"}
+            </button>
+
+            <button
+              onClick={() => {
+                resetPost(platform);
+                showToast("Reset to defaults");
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-red-500/30 hover:text-red-400 transition-colors"
+              title="Reset"
+            >
+              <RotateCcw size={13} />
+            </button>
+
+            <div className="w-px h-6 bg-[var(--border)] mx-1" />
+
+            <select
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
+              className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--foreground)] focus:outline-none"
+            >
+              <option value="png">PNG</option>
+              <option value="jpeg">JPEG</option>
+            </select>
+
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-indigo-500/30 hover:text-indigo-400 transition-colors"
+            >
+              <Copy size={13} />
+              Copy
+            </button>
+
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
+            >
+              <Download size={13} />
+              Export
+            </button>
+          </div>
+
+          <div className="flex sm:hidden items-center gap-1.5">
+            <select
+              value={exportFormat}
+              onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
+              className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--foreground)] focus:outline-none"
+            >
+              <option value="png">PNG</option>
+              <option value="jpeg">JPEG</option>
+            </select>
+
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-indigo-500/30 hover:text-indigo-400 transition-colors"
+            >
+              <Copy size={13} />
+            </button>
+
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
+            >
+              <Download size={13} />
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          {/* Auto-fill */}
+        <div className="flex items-center gap-1.5 px-4 pb-3 overflow-x-auto sm:hidden">
           <button
             onClick={handleAutofill}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-purple-500/30 hover:text-purple-400 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-purple-500/30 hover:text-purple-400 transition-colors whitespace-nowrap"
             title="Auto-fill with meme data"
           >
             <Wand2 size={13} />
-            <span className="hidden sm:inline">Auto-fill</span>
+            Auto-fill
           </button>
 
-          {/* Theme toggle */}
           <button
             onClick={toggleTheme}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-amber-500/30 hover:text-amber-400 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-amber-500/30 hover:text-amber-400 transition-colors whitespace-nowrap"
             title={`Switch to ${isDark ? "light" : "dark"} mode`}
           >
             {isDark ? <Sun size={13} /> : <Moon size={13} />}
-            <span className="hidden sm:inline">{isDark ? "Light" : "Dark"}</span>
+            {isDark ? "Light" : "Dark"}
           </button>
 
-          {/* Reset */}
           <button
             onClick={() => {
               resetPost(platform);
               showToast("Reset to defaults");
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-red-500/30 hover:text-red-400 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-red-500/30 hover:text-red-400 transition-colors whitespace-nowrap"
             title="Reset"
           >
             <RotateCcw size={13} />
-          </button>
-
-          {/* Divider */}
-          <div className="w-px h-6 bg-[var(--border)] mx-1" />
-
-          {/* Format selector */}
-          <select
-            value={exportFormat}
-            onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
-            className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--foreground)] focus:outline-none"
-          >
-            <option value="png">PNG</option>
-            <option value="jpeg">JPEG</option>
-          </select>
-
-          {/* Copy */}
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[var(--surface-2)] border border-[var(--border)] hover:border-indigo-500/30 hover:text-indigo-400 transition-colors"
-          >
-            <Copy size={13} />
-            <span className="hidden sm:inline">Copy</span>
-          </button>
-
-          {/* Export */}
-          <button
-            onClick={handleExport}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
-          >
-            <Download size={13} />
-            Export
+            Reset
           </button>
         </div>
       </header>
 
       {/* ─── Main Content ───────────────────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-col sm:flex-row flex-1 sm:overflow-hidden">
         {/* Preview Area */}
         <div
-          className="flex-1 flex items-center justify-center overflow-auto p-6"
+          className="flex-1 flex items-center justify-center overflow-auto p-4 sm:p-6"
           style={{
             backgroundColor: isDark ? "#0a0a0f" : "#f0f0f5",
             backgroundImage:
@@ -644,7 +698,7 @@ export default function EditorPage() {
         </div>
 
         {/* Sidebar */}
-        <aside className="w-[320px] border-l border-[var(--border)] bg-[var(--background)] overflow-y-auto flex-shrink-0">
+        <aside className="w-full sm:w-[320px] border-t sm:border-t-0 sm:border-l border-[var(--border)] bg-[var(--background)] overflow-y-auto flex-shrink-0">
           <div className="p-4">
             {/* Sidebar header */}
             <div className="flex items-center justify-between mb-5">
@@ -712,35 +766,37 @@ export default function EditorPage() {
               )}
             </div>
 
-            <FieldGroup label="Media Image" icon={ImageIcon}>
-              <ImageUpload
-                value={data.mediaImage}
-                onChange={(v) => updateField("mediaImage", v)}
-              />
-            </FieldGroup>
-
-            <FieldGroup label="Verified Badge" icon={CheckCircle2}>
-              <div className="flex items-center gap-2">
-                <Toggle
-                  value={data.verified}
-                  onChange={(v) => updateField("verified", v)}
-                  label="Verified"
+            <div className="grid grid-cols-2 gap-3">
+              <FieldGroup label="Media Image" icon={ImageIcon}>
+                <ImageUpload
+                  value={data.mediaImage}
+                  onChange={(v) => updateField("mediaImage", v)}
                 />
-                {data.verified && (
-                  <select
-                    value={data.verifiedType}
-                    onChange={(e) =>
-                      updateField("verifiedType", e.target.value)
-                    }
-                    className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--foreground)] focus:outline-none"
-                  >
-                    <option value="blue">Blue</option>
-                    <option value="gold">Gold</option>
-                    <option value="business">Business</option>
-                  </select>
-                )}
-              </div>
-            </FieldGroup>
+              </FieldGroup>
+
+              <FieldGroup label="Verified Badge" icon={CheckCircle2}>
+                <div className="flex flex-col gap-2">
+                  <Toggle
+                    value={data.verified}
+                    onChange={(v) => updateField("verified", v)}
+                    label="Verified"
+                  />
+                  {data.verified && (
+                    <select
+                      value={data.verifiedType}
+                      onChange={(e) =>
+                        updateField("verifiedType", e.target.value)
+                      }
+                      className="bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--foreground)] focus:outline-none"
+                    >
+                      <option value="blue">Blue</option>
+                      <option value="gold">Gold</option>
+                      <option value="business">Business</option>
+                    </select>
+                  )}
+                </div>
+              </FieldGroup>
+            </div>
 
             {/* Divider */}
             <div className="border-t border-[var(--border)] my-4" />
