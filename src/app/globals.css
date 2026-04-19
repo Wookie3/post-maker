@@ -18,7 +18,7 @@
   --surface-2: #1e1e24;
   --surface-3: #2a2a32;
   --border: #2e2e38;
-  --muted: #71717a;
+  --muted: #91919a;
 }
 
 * {
@@ -66,7 +66,7 @@ body {
 .twitter-dark {
   --tw-bg: #000000;
   --tw-text: #e7e9ea;
-  --tw-secondary: #71767b;
+  --tw-secondary: #8b8f94;
   --tw-accent: #1d9bf0;
   --tw-border: #2f3336;
   --tw-hover: #16181c;
@@ -85,7 +85,7 @@ body {
 .instagram-light {
   --ig-bg: #ffffff;
   --ig-text: #262626;
-  --ig-secondary: #8e8e8e;
+  --ig-secondary: #767676;
   --ig-border: #dbdbdb;
   --ig-separator: #efefef;
   --ig-link: #00376b;
@@ -168,6 +168,11 @@ body {
   outline-offset: 2px;
 }
 
+.editable-element:focus-visible {
+  outline: 2px solid rgba(99, 102, 241, 0.8);
+  outline-offset: 2px;
+}
+
 /* ─── Animation ──────────────────────────────────────────── */
 
 @keyframes fadeIn {
@@ -215,4 +220,13 @@ body {
 
 .animate-slide-up {
   animation: slideUp 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-scale-in,
+  .animate-slide-up,
+  .animate-spin {
+    animation: none;
+  }
 }

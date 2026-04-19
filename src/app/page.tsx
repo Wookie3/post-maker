@@ -45,7 +45,7 @@ export default function Home() {
       <header className="border-b border-[var(--border)] px-6 py-5">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white">
+            <div aria-hidden="true" className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white">
               <Mail size={18} />
             </div>
             <div>
@@ -69,7 +69,7 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 px-6 py-12">
+      <main id="main-content" className="flex-1 px-6 py-12">
         <div className="max-w-6xl mx-auto">
           {/* Hero */}
           <div className="text-center mb-12">
@@ -97,6 +97,7 @@ export default function Home() {
 
                 {/* Icon */}
                 <div
+                  aria-hidden="true"
                   className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${platformColors[template.platform]} flex items-center justify-center text-2xl mb-4 shadow-lg`}
                 >
                   {template.icon}
@@ -123,7 +124,7 @@ export default function Home() {
                 </div>
 
                 {/* Arrow */}
-                <div className="absolute top-6 right-6 text-[var(--muted)] group-hover:text-[var(--foreground)] transition-colors">
+                <div className="absolute top-6 right-6 text-[var(--muted)] group-hover:text-[var(--foreground)] transition-colors" aria-hidden="true">
                   <svg
                     width="20"
                     height="20"
