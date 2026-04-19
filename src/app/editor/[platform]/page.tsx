@@ -8,6 +8,7 @@ import {
 } from "@/stores/editor";
 import { Platform, PostData, TwitterPostData, InstagramPostData, FacebookPostData } from "@/types";
 import { exportPost, downloadBlob, copyToClipboard, ExportFormat } from "@/lib/export";
+import { compressImage } from "@/lib/compress";
 import TwitterRenderer from "@/components/templates/twitter/TwitterRenderer";
 import InstagramRenderer from "@/components/templates/instagram/InstagramRenderer";
 import FacebookRenderer from "@/components/templates/facebook/FacebookRenderer";
@@ -37,7 +38,9 @@ import {
 // ─── Image upload helper ──────────────────────────────────────
 
 function uploadImage(
-  callback: (dataUrl: string) => void
+  callback: (dataUrl: string) => void,
+  maxWidth: number = 1200,
+  maxHeight: number = 1200
 ): void {
   const input = document.createElement("input");
   input.type = "file";
@@ -47,15 +50,19 @@ function uploadImage(
   input.style.opacity = "0";
   input.style.pointerEvents = "none";
   document.body.appendChild(input);
-  input.onchange = (e) => {
+  input.onchange = async (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      callback(reader.result as string);
+    reader.onload = async () => {
+      const compressed = await compressImage(reader.result as string, {
+        maxWidth,
+        maxHeight,
+      });
+      callback(compressed);
+      document.body.removeChild(input);
     };
     reader.readAsDataURL(file);
-    document.body.removeChild(input);
   };
   input.click();
 }
@@ -183,15 +190,19 @@ function Toggle({
 function ImageUpload({
   value,
   onChange,
+  maxWidth = 1200,
+  maxHeight = 1200,
 }: {
   value: string;
   onChange: (v: string) => void;
+  maxWidth?: number;
+  maxHeight?: number;
 }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <button
-          onClick={() => uploadImage(onChange)}
+          onClick={() => uploadImage(onChange, maxWidth, maxHeight)}
           className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-sm text-[var(--muted)] hover:border-indigo-500/30 hover:text-[var(--foreground)] transition-colors"
         >
           <ImageIcon size={14} />
@@ -765,6 +776,8 @@ export default function EditorPage() {
               <ImageUpload
                 value={data.profileImage}
                 onChange={(v) => updateField("profileImage", v)}
+                maxWidth={256}
+                maxHeight={256}
               />
             </FieldGroup>
 
