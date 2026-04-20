@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, useId } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   useEditorStore,
@@ -8,6 +8,7 @@ import {
 } from "@/stores/editor";
 import { Platform, PostData, TwitterPostData, InstagramPostData, FacebookPostData } from "@/types";
 import { exportPost, downloadBlob, copyToClipboard, ExportFormat } from "@/lib/export";
+import { compressImage } from "@/lib/compress";
 import TwitterRenderer from "@/components/templates/twitter/TwitterRenderer";
 import InstagramRenderer from "@/components/templates/instagram/InstagramRenderer";
 import FacebookRenderer from "@/components/templates/facebook/FacebookRenderer";
@@ -37,17 +38,29 @@ import {
 // ─── Image upload helper ──────────────────────────────────────
 
 function uploadImage(
-  callback: (dataUrl: string) => void
+  callback: (dataUrl: string) => void,
+  maxWidth: number = 1200,
+  maxHeight: number = 1200
 ): void {
   const input = document.createElement("input");
   input.type = "file";
   input.accept = "image/*";
-  input.onchange = (e) => {
+  input.setAttribute("aria-label", "Upload image");
+  input.style.position = "fixed";
+  input.style.opacity = "0";
+  input.style.pointerEvents = "none";
+  document.body.appendChild(input);
+  input.onchange = async (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      callback(reader.result as string);
+    reader.onload = async () => {
+      const compressed = await compressImage(reader.result as string, {
+        maxWidth,
+        maxHeight,
+      });
+      callback(compressed);
+      document.body.removeChild(input);
     };
     reader.readAsDataURL(file);
   };
@@ -65,13 +78,17 @@ function FieldGroup({
   icon: React.ElementType;
   children: React.ReactNode;
 }) {
+  const id = useId();
+  const child = React.Children.only(children) as React.ReactElement<{
+    id?: string;
+  }>;
   return (
     <div className="mb-4">
-      <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--muted)] mb-1.5">
+      <label htmlFor={id} className="flex items-center gap-1.5 text-xs font-medium text-[var(--muted)] mb-1.5">
         <Icon size={12} />
         {label}
       </label>
-      {children}
+      {React.cloneElement(child, { id })}
     </div>
   );
 }
@@ -81,17 +98,20 @@ function TextInput({
   onChange,
   placeholder,
   multiline = false,
+  id,
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   multiline?: boolean;
+  id?: string;
 }) {
   const baseClasses =
     "w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] placeholder:text-[var(--muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-colors";
   if (multiline) {
     return (
       <textarea
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
@@ -102,6 +122,7 @@ function TextInput({
   }
   return (
     <input
+      id={id}
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
@@ -114,16 +135,19 @@ function TextInput({
 function NumberInput({
   value,
   onChange,
+  id,
 }: {
   value: number;
   onChange: (v: number) => void;
+  id?: string;
 }) {
   return (
     <div className="flex items-center gap-2">
       <input
+        id={id}
         type="number"
         value={value}
-        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+        onChange={(e) => onChange(Math.max(0, parseInt(e.target.value) || 0))}
         className="w-full bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-2 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-colors"
         min={0}
       />
@@ -142,6 +166,8 @@ function Toggle({
 }) {
   return (
     <button
+      role="switch"
+      aria-checked={value}
       onClick={() => onChange(!value)}
       className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors text-sm ${
         value
@@ -164,15 +190,19 @@ function Toggle({
 function ImageUpload({
   value,
   onChange,
+  maxWidth = 1200,
+  maxHeight = 1200,
 }: {
   value: string;
   onChange: (v: string) => void;
+  maxWidth?: number;
+  maxHeight?: number;
 }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <button
-          onClick={() => uploadImage(onChange)}
+          onClick={() => uploadImage(onChange, maxWidth, maxHeight)}
           className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-sm text-[var(--muted)] hover:border-indigo-500/30 hover:text-[var(--foreground)] transition-colors"
         >
           <ImageIcon size={14} />
@@ -310,10 +340,12 @@ function InstagramSidebar({ data }: { data: InstagramPostData }) {
         />
       </FieldGroup>
       <FieldGroup label="Aspect Ratio" icon={Settings}>
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="radiogroup" aria-label="Aspect Ratio">
           {(["1:1", "4:5"] as const).map((ratio) => (
             <button
               key={ratio}
+              role="radio"
+              aria-checked={data.imageAspectRatio === ratio}
               onClick={() => updateField("imageAspectRatio", ratio)}
               className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                 data.imageAspectRatio === ratio
@@ -342,11 +374,19 @@ function FacebookSidebar({ data }: { data: FacebookPostData }) {
 
   return (
     <>
+      <FieldGroup label="Comments" icon={MessageSquare}>
+        <NumberInput
+          value={data.comments}
+          onChange={(v) => updateField("comments", v)}
+        />
+      </FieldGroup>
       <FieldGroup label="Privacy" icon={Shield}>
-        <div className="flex gap-2">
+        <div className="flex gap-2" role="radiogroup" aria-label="Privacy">
           {(["public", "friends", "only_me"] as const).map((p) => (
             <button
               key={p}
+              role="radio"
+              aria-checked={data.privacy === p}
               onClick={() => updateField("privacy", p)}
               className={`px-3 py-1.5 rounded-lg text-xs border transition-colors capitalize ${
                 data.privacy === p
@@ -386,11 +426,12 @@ function FacebookSidebar({ data }: { data: FacebookPostData }) {
               </span>
               <input
                 type="number"
+                aria-label={`${key} reaction count`}
                 value={val}
                 onChange={(e) =>
                   updateField("reactions", {
                     ...data.reactions,
-                    [key]: parseInt(e.target.value) || 0,
+                    [key]: Math.max(0, parseInt(e.target.value) || 0),
                   })
                 }
                 className="flex-1 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-2 py-1 text-sm text-[var(--foreground)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
@@ -415,7 +456,7 @@ function Toast({
 }) {
   if (!visible) return null;
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+    <div role="status" aria-live="polite" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-up max-w-[calc(100vw-3rem)]">
       <div className="px-4 py-2.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-sm font-medium shadow-xl flex items-center gap-2">
         <CheckCircle2 size={16} className="text-green-400" />
         {message}
@@ -445,9 +486,12 @@ export default function EditorPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [platform]);
 
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const showToast = useCallback((message: string) => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     setToast({ message, visible: true });
-    setTimeout(() => setToast({ message: "", visible: false }), 2500);
+    toastTimeoutRef.current = setTimeout(() => setToast({ message: "", visible: false }), 2500);
   }, []);
 
   const handleExport = useCallback(async () => {
@@ -503,7 +547,7 @@ export default function EditorPage() {
 
   if (!postData || postData.platform !== platform) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div role="status" aria-label="Loading" className="flex items-center justify-center min-h-screen">
         <div className="animate-spin w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full" />
       </div>
     );
@@ -522,6 +566,7 @@ export default function EditorPage() {
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
             <button
+              aria-label="Back to home"
               onClick={() => router.push("/")}
               className="p-1.5 rounded-lg hover:bg-[var(--surface-2)] transition-colors"
             >
@@ -566,6 +611,7 @@ export default function EditorPage() {
             <div className="w-px h-6 bg-[var(--border)] mx-1" />
 
             <select
+              aria-label="Export format"
               value={exportFormat}
               onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
               className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--foreground)] focus:outline-none"
@@ -593,6 +639,7 @@ export default function EditorPage() {
 
           <div className="flex sm:hidden items-center gap-1.5">
             <select
+              aria-label="Export format"
               value={exportFormat}
               onChange={(e) => setExportFormat(e.target.value as ExportFormat)}
               className="bg-[var(--surface-2)] border border-[var(--border)] rounded-lg px-2 py-1.5 text-xs text-[var(--foreground)] focus:outline-none"
@@ -698,7 +745,7 @@ export default function EditorPage() {
         </div>
 
         {/* Sidebar */}
-        <aside className="w-full sm:w-[320px] border-t sm:border-t-0 sm:border-l border-[var(--border)] bg-[var(--background)] overflow-y-auto flex-shrink-0">
+        <aside aria-label="Post properties editor" className="w-full sm:w-[320px] border-t sm:border-t-0 sm:border-l border-[var(--border)] bg-[var(--background)] overflow-y-auto flex-shrink-0">
           <div className="p-4">
             {/* Sidebar header */}
             <div className="flex items-center justify-between mb-5">
@@ -729,6 +776,8 @@ export default function EditorPage() {
               <ImageUpload
                 value={data.profileImage}
                 onChange={(v) => updateField("profileImage", v)}
+                maxWidth={256}
+                maxHeight={256}
               />
             </FieldGroup>
 
@@ -749,22 +798,12 @@ export default function EditorPage() {
               />
             </FieldGroup>
 
-            <div className="grid grid-cols-2 gap-3">
-              <FieldGroup label="Likes" icon={Heart}>
-                <NumberInput
-                  value={data.likes}
-                  onChange={(v) => updateField("likes", v)}
-                />
-              </FieldGroup>
-              {platform !== "facebook" && (
-                <FieldGroup label="Comments" icon={MessageSquare}>
-                  <NumberInput
-                    value={data.comments}
-                    onChange={(v) => updateField("comments", v)}
-                  />
-                </FieldGroup>
-              )}
-            </div>
+            <FieldGroup label="Likes" icon={Heart}>
+              <NumberInput
+                value={data.likes}
+                onChange={(v) => updateField("likes", v)}
+              />
+            </FieldGroup>
 
             <div className="grid grid-cols-2 gap-3">
               <FieldGroup label="Media Image" icon={ImageIcon}>
@@ -783,6 +822,7 @@ export default function EditorPage() {
                   />
                   {data.verified && (
                     <select
+                      aria-label="Verified badge type"
                       value={data.verifiedType}
                       onChange={(e) =>
                         updateField("verifiedType", e.target.value)

@@ -20,6 +20,41 @@ interface FacebookRendererProps {
   onSelectField: (field: string) => void;
 }
 
+function Editable({
+  field,
+  selectedField,
+  onSelect,
+  children,
+  className = "",
+}: {
+  field: string;
+  selectedField: string | null;
+  onSelect: (f: string) => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      tabIndex={0}
+      role="button"
+      aria-label={`Edit ${field}`}
+      className={`editable-element ${selectedField === field ? "selected" : ""} ${className}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(field);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(field);
+        }
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 const reactionEmoji: Record<ReactionType, string> = {
   like: "👍",
   love: "❤️",
@@ -67,17 +102,9 @@ export default function FacebookRenderer({
       }}
     >
       <div data-post-container className="p-4">
-        {/* Header row */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-start gap-2.5">
-            {/* Avatar */}
-            <div
-              className={`editable-element ${selectedField === "profileImage" ? "selected" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectField("profileImage");
-              }}
-            >
+            <Editable field="profileImage" selectedField={selectedField} onSelect={onSelectField}>
               <div
                 className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0"
                 style={{ backgroundColor: "var(--fb-border)" }}
@@ -89,23 +116,16 @@ export default function FacebookRenderer({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
+                  <div className="w-full h-full flex items-center justify-center text-sm font-bold" style={{ color: "var(--fb-secondary)" }}>
                     {data.displayName?.[0]?.toUpperCase() || "?"}
                   </div>
                 )}
               </div>
-            </div>
+            </Editable>
 
-            {/* Name + timestamp + privacy */}
             <div className="flex flex-col">
-              <div
-                className={`editable-element flex items-center gap-1 ${selectedField === "displayName" ? "selected" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectField("displayName");
-                }}
-              >
-                <span className="font-semibold text-[14px] leading-5 hover:underline cursor-pointer">
+              <Editable field="displayName" selectedField={selectedField} onSelect={onSelectField} className="flex items-center gap-1">
+                <span className="font-semibold text-[14px] leading-5">
                   {data.displayName}
                 </span>
                 {data.verified && (
@@ -116,14 +136,8 @@ export default function FacebookRenderer({
                     className="text-white"
                   />
                 )}
-              </div>
-              <div
-                className={`editable-element flex items-center gap-1 ${selectedField === "timestamp" ? "selected" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectField("timestamp");
-                }}
-              >
+              </Editable>
+              <Editable field="timestamp" selectedField={selectedField} onSelect={onSelectField} className="flex items-center gap-1">
                 <span
                   className="text-[12px] leading-4"
                   style={{ color: "var(--fb-secondary)" }}
@@ -134,11 +148,11 @@ export default function FacebookRenderer({
                 <span style={{ color: "var(--fb-secondary)" }}>
                   <PrivacyIcon privacy={data.privacy} />
                 </span>
-              </div>
+              </Editable>
             </div>
           </div>
 
-          <button className="p-2 rounded-full hover:bg-[var(--fb-hover)] transition-colors">
+          <button aria-hidden="true" tabIndex={-1} className="p-2 rounded-full hover:bg-[var(--fb-hover)] transition-colors">
             <MoreHorizontal
               size={20}
               style={{ color: "var(--fb-secondary)" }}
@@ -146,52 +160,30 @@ export default function FacebookRenderer({
           </button>
         </div>
 
-        {/* Post text */}
         {data.text && (
-          <div
-            className={`editable-element mb-3 ${selectedField === "text" ? "selected" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectField("text");
-            }}
-          >
+          <Editable field="text" selectedField={selectedField} onSelect={onSelectField} className="mb-3">
             <p className="text-[15px] leading-5 whitespace-pre-wrap break-words">
               {data.text}
             </p>
-          </div>
+          </Editable>
         )}
 
-        {/* Media */}
         {data.mediaImage && (
-          <div
-            className={`editable-element mb-3 -mx-4 ${selectedField === "mediaImage" ? "selected" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectField("mediaImage");
-            }}
-          >
+          <Editable field="mediaImage" selectedField={selectedField} onSelect={onSelectField} className="mb-3 -mx-4">
             <img
               src={data.mediaImage}
               alt="media"
               className="w-full object-cover"
               style={{ maxHeight: "400px" }}
             />
-          </div>
+          </Editable>
         )}
 
-        {/* Reactions + comments/shares counts */}
         <div
           className="flex items-center justify-between pb-2 mb-2"
           style={{ borderBottom: `1px solid var(--fb-border)` }}
         >
-          {/* Reaction emoji stack */}
-          <div
-            className={`editable-element flex items-center gap-1 ${selectedField === "likes" ? "selected" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectField("likes");
-            }}
-          >
+          <Editable field="likes" selectedField={selectedField} onSelect={onSelectField} className="flex items-center gap-1">
             <div className="flex -space-x-1">
               {data.topReactions.map((r) => (
                 <span
@@ -208,43 +200,30 @@ export default function FacebookRenderer({
             >
               {formatNumber(totalReactions)}
             </span>
-          </div>
+          </Editable>
 
           <div className="flex items-center gap-3">
-            <div
-              className={`editable-element ${selectedField === "comments" ? "selected" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectField("comments");
-              }}
-            >
+            <Editable field="comments" selectedField={selectedField} onSelect={onSelectField}>
               <span
                 className="text-[13px]"
                 style={{ color: "var(--fb-secondary)" }}
               >
                 {formatNumber(data.comments)} comments
               </span>
-            </div>
-            <div
-              className={`editable-element ${selectedField === "shares" ? "selected" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectField("shares");
-              }}
-            >
+            </Editable>
+            <Editable field="shares" selectedField={selectedField} onSelect={onSelectField}>
               <span
                 className="text-[13px]"
                 style={{ color: "var(--fb-secondary)" }}
               >
                 {formatNumber(data.shares)} shares
               </span>
-            </div>
+            </Editable>
           </div>
         </div>
 
-        {/* Action buttons */}
         <div className="flex items-center justify-between">
-          <button className="flex items-center justify-center gap-2 flex-1 py-1.5 rounded-md hover:bg-[var(--fb-hover)] transition-colors">
+          <button aria-hidden="true" tabIndex={-1} className="flex items-center justify-center gap-2 flex-1 py-1.5 rounded-md hover:bg-[var(--fb-hover)] transition-colors">
             <ThumbsUp size={18} style={{ color: "var(--fb-secondary)" }} />
             <span
               className="font-semibold text-[13px]"
@@ -253,7 +232,7 @@ export default function FacebookRenderer({
               Like
             </span>
           </button>
-          <button className="flex items-center justify-center gap-2 flex-1 py-1.5 rounded-md hover:bg-[var(--fb-hover)] transition-colors">
+          <button aria-hidden="true" tabIndex={-1} className="flex items-center justify-center gap-2 flex-1 py-1.5 rounded-md hover:bg-[var(--fb-hover)] transition-colors">
             <MessageCircle
               size={18}
               style={{ color: "var(--fb-secondary)" }}
@@ -265,7 +244,7 @@ export default function FacebookRenderer({
               Comment
             </span>
           </button>
-          <button className="flex items-center justify-center gap-2 flex-1 py-1.5 rounded-md hover:bg-[var(--fb-hover)] transition-colors">
+          <button aria-hidden="true" tabIndex={-1} className="flex items-center justify-center gap-2 flex-1 py-1.5 rounded-md hover:bg-[var(--fb-hover)] transition-colors">
             <Share2 size={18} style={{ color: "var(--fb-secondary)" }} />
             <span
               className="font-semibold text-[13px]"

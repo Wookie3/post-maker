@@ -18,6 +18,41 @@ interface InstagramRendererProps {
   onSelectField: (field: string) => void;
 }
 
+function Editable({
+  field,
+  selectedField,
+  onSelect,
+  children,
+  className = "",
+}: {
+  field: string;
+  selectedField: string | null;
+  onSelect: (f: string) => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      tabIndex={0}
+      role="button"
+      aria-label={`Edit ${field}`}
+      className={`editable-element ${selectedField === field ? "selected" : ""} ${className}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(field);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(field);
+        }
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function InstagramRenderer({
   data,
   selectedField,
@@ -37,20 +72,12 @@ export default function InstagramRenderer({
       }}
     >
       <div data-post-container>
-        {/* Header: avatar + name + follow + dots */}
         <div
           className="flex items-center justify-between px-3 py-2.5"
           style={{ borderBottom: `1px solid var(--ig-border)` }}
         >
           <div className="flex items-center gap-2.5">
-            {/* Avatar */}
-            <div
-              className={`editable-element ${selectedField === "profileImage" ? "selected" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectField("profileImage");
-              }}
-            >
+            <Editable field="profileImage" selectedField={selectedField} onSelect={onSelectField}>
               <div
                 className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0"
                 style={{ background: "var(--ig-border)" }}
@@ -62,22 +89,15 @@ export default function InstagramRenderer({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-xs font-bold text-gray-500">
+                  <div className="w-full h-full flex items-center justify-center text-xs font-bold" style={{ color: "var(--ig-secondary)" }}>
                     {data.displayName?.[0]?.toUpperCase() || "?"}
                   </div>
                 )}
               </div>
-            </div>
+            </Editable>
 
-            {/* Name + location */}
             <div className="flex flex-col">
-              <div
-                className={`editable-element flex items-center gap-1 ${selectedField === "displayName" ? "selected" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectField("displayName");
-                }}
-              >
+              <Editable field="displayName" selectedField={selectedField} onSelect={onSelectField} className="flex items-center gap-1">
                 <span className="font-semibold text-[13px] leading-4">
                   {data.displayName}
                 </span>
@@ -94,22 +114,16 @@ export default function InstagramRenderer({
                     · Sponsored
                   </span>
                 )}
-              </div>
+              </Editable>
               {data.location && (
-                <div
-                  className={`editable-element ${selectedField === "location" ? "selected" : ""}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectField("location");
-                  }}
-                >
+                <Editable field="location" selectedField={selectedField} onSelect={onSelectField}>
                   <span className="text-[11px] leading-3">{data.location}</span>
-                </div>
+                </Editable>
               )}
             </div>
           </div>
 
-          <button className="p-1">
+          <button aria-hidden="true" tabIndex={-1} className="p-1">
             <MoreHorizontal
               size={16}
               style={{ color: "var(--ig-text)" }}
@@ -117,14 +131,7 @@ export default function InstagramRenderer({
           </button>
         </div>
 
-        {/* Image area */}
-        <div
-          className={`editable-element ${selectedField === "mediaImage" ? "selected" : ""}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelectField("mediaImage");
-          }}
-        >
+        <Editable field="mediaImage" selectedField={selectedField} onSelect={onSelectField}>
           <div
             className="w-full overflow-hidden"
             style={{
@@ -142,6 +149,7 @@ export default function InstagramRenderer({
             ) : (
               <div className="w-full h-full flex items-center justify-center text-sm text-[var(--ig-secondary)]">
                 <svg
+                  aria-hidden="true"
                   width="48"
                   height="48"
                   viewBox="0 0 24 24"
@@ -158,87 +166,58 @@ export default function InstagramRenderer({
               </div>
             )}
           </div>
-        </div>
+        </Editable>
 
-        {/* Action bar */}
         <div className="flex items-center justify-between px-3 py-2">
           <div className="flex items-center gap-4">
-            <button className="p-0.5">
+            <button aria-hidden="true" tabIndex={-1} className="p-0.5">
               <Heart size={24} style={{ color: "var(--ig-text)" }} />
             </button>
-            <button className="p-0.5">
+            <button aria-hidden="true" tabIndex={-1} className="p-0.5">
               <MessageCircle
                 size={24}
                 style={{ color: "var(--ig-text)" }}
               />
             </button>
-            <button className="p-0.5">
+            <button aria-hidden="true" tabIndex={-1} className="p-0.5">
               <Send size={24} style={{ color: "var(--ig-text)" }} />
             </button>
           </div>
-          <button className="p-0.5">
+          <button aria-hidden="true" tabIndex={-1} className="p-0.5">
             <Bookmark size={24} style={{ color: "var(--ig-text)" }} />
           </button>
         </div>
 
-        {/* Likes */}
-        <div
-          className={`editable-element px-3 pb-1 ${selectedField === "likes" ? "selected" : ""}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelectField("likes");
-          }}
-        >
+        <Editable field="likes" selectedField={selectedField} onSelect={onSelectField} className="px-3 pb-1">
           <span className="font-semibold text-[13px]">
             {formatNumber(data.likes)} likes
           </span>
-        </div>
+        </Editable>
 
-        {/* Caption */}
-        <div
-          className={`editable-element px-3 pb-1 ${selectedField === "text" ? "selected" : ""}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelectField("text");
-          }}
-        >
+        <Editable field="text" selectedField={selectedField} onSelect={onSelectField} className="px-3 pb-1">
           <p className="text-[13px] leading-4">
             <span className="font-semibold mr-1">{data.displayName}</span>
             <span>{data.text}</span>
           </p>
-        </div>
+        </Editable>
 
-        {/* Comments count */}
-        <div
-          className={`editable-element px-3 pb-1 ${selectedField === "comments" ? "selected" : ""}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelectField("comments");
-          }}
-        >
+        <Editable field="comments" selectedField={selectedField} onSelect={onSelectField} className="px-3 pb-1">
           <span
             className="text-[13px]"
             style={{ color: "var(--ig-secondary)" }}
           >
             View all {formatNumber(data.comments)} comments
           </span>
-        </div>
+        </Editable>
 
-        {/* Timestamp */}
-        <div
-          className={`editable-element px-3 pb-4 ${selectedField === "timestamp" ? "selected" : ""}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelectField("timestamp");
-          }}
-        >
+        <Editable field="timestamp" selectedField={selectedField} onSelect={onSelectField} className="px-3 pb-4">
           <span
             className="text-[10px] uppercase tracking-wide"
             style={{ color: "var(--ig-secondary)" }}
           >
             {data.timestamp}
           </span>
-        </div>
+        </Editable>
       </div>
     </div>
   );

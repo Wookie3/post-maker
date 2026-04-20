@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import {
   PostData,
   TwitterPostData,
@@ -10,6 +10,7 @@ import {
   Template,
 } from "@/types";
 import { generateAutofill } from "@/lib/autofill";
+import indexedDBStorage from "@/lib/storage";
 
 // ─── Templates ────────────────────────────────────────────────
 
@@ -190,8 +191,8 @@ export const useEditorStore = create<EditorState>()(
     }),
     {
       name: "post-maker-storage",
-      // Only persist postData
       partialize: (state) => ({ postData: state.postData }),
+      storage: createJSONStorage(() => indexedDBStorage),
     }
   )
 );

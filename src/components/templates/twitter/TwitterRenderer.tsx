@@ -20,6 +20,41 @@ interface TwitterRendererProps {
   onSelectField: (field: string) => void;
 }
 
+function Editable({
+  field,
+  selectedField,
+  onSelect,
+  children,
+  className = "",
+}: {
+  field: string;
+  selectedField: string | null;
+  onSelect: (f: string) => void;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      tabIndex={0}
+      role="button"
+      aria-label={`Edit ${field}`}
+      className={`editable-element ${selectedField === field ? "selected" : ""} ${className}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(field);
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(field);
+        }
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function TwitterRenderer({
   data,
   selectedField,
@@ -38,19 +73,10 @@ export default function TwitterRenderer({
         maxWidth: "598px",
       }}
     >
-      {/* Post container with data attribute for export */}
       <div data-post-container className="p-4">
-        {/* Header row: avatar + name/handle + 3-dot menu */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-3">
-            {/* Avatar */}
-            <div
-              className={`editable-element ${selectedField === "profileImage" ? "selected" : ""}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectField("profileImage");
-              }}
-            >
+            <Editable field="profileImage" selectedField={selectedField} onSelect={onSelectField}>
               <div
                 className="w-10 h-10 rounded-full bg-gray-300 overflow-hidden flex-shrink-0"
                 style={{ backgroundColor: "var(--tw-border)" }}
@@ -62,22 +88,15 @@ export default function TwitterRenderer({
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-sm font-bold text-gray-500">
+                  <div className="w-full h-full flex items-center justify-center text-sm font-bold" style={{ color: "var(--tw-secondary)" }}>
                     {data.displayName?.[0]?.toUpperCase() || "?"}
                   </div>
                 )}
               </div>
-            </div>
+            </Editable>
 
-            {/* Name + Handle */}
             <div className="flex flex-col">
-              <div
-                className={`editable-element flex items-center gap-1 ${selectedField === "displayName" ? "selected" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectField("displayName");
-                }}
-              >
+              <Editable field="displayName" selectedField={selectedField} onSelect={onSelectField} className="flex items-center gap-1">
                 <span className="font-bold text-[15px] leading-5">
                   {data.displayName}
                 </span>
@@ -101,26 +120,19 @@ export default function TwitterRenderer({
                     className="text-white"
                   />
                 )}
-              </div>
-              <div
-                className={`editable-element ${selectedField === "handle" ? "selected" : ""}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectField("handle");
-                }}
-              >
+              </Editable>
+              <Editable field="handle" selectedField={selectedField} onSelect={onSelectField}>
                 <span
                   className="text-[15px] leading-5"
                   style={{ color: "var(--tw-secondary)" }}
                 >
                   @{data.handle}
                 </span>
-              </div>
+              </Editable>
             </div>
           </div>
 
-          {/* 3-dot menu */}
-          <button className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors">
+          <button aria-hidden="true" tabIndex={-1} className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors">
             <MoreHorizontal
               size={18}
               style={{ color: "var(--tw-secondary)" }}
@@ -128,31 +140,17 @@ export default function TwitterRenderer({
           </button>
         </div>
 
-        {/* Tweet text */}
-        <div
-          className={`editable-element mb-3 ${selectedField === "text" ? "selected" : ""}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelectField("text");
-          }}
-        >
+        <Editable field="text" selectedField={selectedField} onSelect={onSelectField} className="mb-3">
           <p
             className="text-[15px] leading-[20px] whitespace-pre-wrap break-words"
             style={{ color: "var(--tw-text)" }}
           >
             {data.text}
           </p>
-        </div>
+        </Editable>
 
-        {/* Media */}
         {data.mediaImage && (
-          <div
-            className={`editable-element mb-3 ${selectedField === "mediaImage" ? "selected" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectField("mediaImage");
-            }}
-          >
+          <Editable field="mediaImage" selectedField={selectedField} onSelect={onSelectField} className="mb-3">
             <div
               className="rounded-2xl overflow-hidden border"
               style={{ borderColor: "var(--tw-border)" }}
@@ -164,10 +162,9 @@ export default function TwitterRenderer({
                 style={{ maxHeight: "285px" }}
               />
             </div>
-          </div>
+          </Editable>
         )}
 
-        {/* Quote Tweet */}
         {data.isQuoteTweet && data.quotedTweet && (
           <div
             className="mb-3 rounded-2xl border p-3 cursor-pointer"
@@ -201,14 +198,7 @@ export default function TwitterRenderer({
           </div>
         )}
 
-        {/* Timestamp */}
-        <div
-          className={`editable-element mb-3 ${selectedField === "timestamp" ? "selected" : ""}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelectField("timestamp");
-          }}
-        >
+        <Editable field="timestamp" selectedField={selectedField} onSelect={onSelectField} className="mb-3">
           <div
             className="flex items-center gap-1 text-[13px] pb-3"
             style={{
@@ -223,9 +213,8 @@ export default function TwitterRenderer({
             </span>
             <span>Views</span>
           </div>
-        </div>
+        </Editable>
 
-        {/* Engagement counts */}
         <div
           className="flex items-center gap-5 text-[13px] pb-3"
           style={{
@@ -233,66 +222,47 @@ export default function TwitterRenderer({
             borderBottom: `1px solid var(--tw-border)`,
           }}
         >
-          <div
-            className={`editable-element flex items-center gap-1 ${selectedField === "retweets" ? "selected" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectField("retweets");
-            }}
-          >
+          <Editable field="retweets" selectedField={selectedField} onSelect={onSelectField} className="flex items-center gap-1">
             <span className="font-bold" style={{ color: "var(--tw-text)" }}>
               {formatNumber(data.retweets)}
             </span>
             <span>Reposts</span>
-          </div>
-          <div
-            className={`editable-element flex items-center gap-1 ${selectedField === "likes" ? "selected" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectField("likes");
-            }}
-          >
+          </Editable>
+          <Editable field="likes" selectedField={selectedField} onSelect={onSelectField} className="flex items-center gap-1">
             <span className="font-bold" style={{ color: "var(--tw-text)" }}>
               {formatNumber(data.likes)}
             </span>
             <span>Likes</span>
-          </div>
-          <div
-            className={`editable-element flex items-center gap-1 ${selectedField === "bookmarks" ? "selected" : ""}`}
-            onClick={(e) => {
-              e.stopPropagation();
-              onSelectField("bookmarks");
-            }}
-          >
+          </Editable>
+          <Editable field="bookmarks" selectedField={selectedField} onSelect={onSelectField} className="flex items-center gap-1">
             <span className="font-bold" style={{ color: "var(--tw-text)" }}>
               {formatNumber(data.bookmarks)}
             </span>
             <span>Bookmarks</span>
-          </div>
+          </Editable>
         </div>
 
-        {/* Action bar */}
         <div
           className="flex items-center justify-between pt-1"
           style={{ color: "var(--tw-secondary)" }}
         >
-          <button className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
+          <button aria-hidden="true" tabIndex={-1} className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
             <MessageCircle size={18} className="group-hover:text-sky-400" />
           </button>
-          <button className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
+          <button aria-hidden="true" tabIndex={-1} className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
             <Repeat2 size={18} className="group-hover:text-green-400" />
           </button>
-          <button className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
+          <button aria-hidden="true" tabIndex={-1} className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
             <Heart size={18} className="group-hover:text-pink-400" />
           </button>
-          <button className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
+          <button aria-hidden="true" tabIndex={-1} className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
             <BarChart3 size={18} className="group-hover:text-sky-400" />
           </button>
           <div className="flex items-center">
-            <button className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
+            <button aria-hidden="true" tabIndex={-1} className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
               <Bookmark size={18} className="group-hover:text-sky-400" />
             </button>
-            <button className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
+            <button aria-hidden="true" tabIndex={-1} className="p-2 rounded-full hover:bg-[var(--tw-hover)] transition-colors group">
               <Share size={18} className="group-hover:text-sky-400" />
             </button>
           </div>
